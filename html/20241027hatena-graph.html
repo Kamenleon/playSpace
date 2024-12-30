@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2024 Journal Review</title>
+  <!-- Core React -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <!-- Framer Motion -->
+  <script src="https://unpkg.com/framer-motion@11.0.8/dist/framer-motion.js"></script>
+  <!-- Recharts and its dependencies -->
+  <script src="https://unpkg.com/recharts@2.12.2/umd/Recharts.js"></script>
+  <script type="text/javascript"
+    src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.3.2/dist/confetti.browser.min.js"></script>
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { motion, AnimatePresence } = Motion;
+    const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
+
+    // Custom Icon Components
+    const TypeIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="4 7 4 4 20 4 20 7"></polyline>
+        <line x1="9" y1="20" x2="15" y2="20"></line>
+        <line x1="12" y1="4" x2="12" y2="20"></line>
+      </svg>
+    );
+
+    const ClockIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    );
+
+    // MonthlyChart Component
+    function MonthlyChart({ data, dataKey, className = '' }) {
+      return (
+        <div className={`h-64 ${className}`}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+              <XAxis
+                dataKey="name"
+                tick={{ fill: '#6B7280' }}
+                axisLine={{ stroke: '#E5E7EB' }}
+              />
+              <YAxis
+                tick={{ fill: '#6B7280' }}
+                axisLine={{ stroke: '#E5E7EB' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  color: '#111827'
+                }}
+              />
+              <Bar
+                dataKey={dataKey}
+                fill="#111827"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
+
+    // CountUp Component
+    function CountUp({ value, label, icon, className = '' }) {
+      const [displayValue, setDisplayValue] = useState(0);
+      const [isAnimating, setIsAnimating] = useState(false);
+      const controls = Motion.useAnimationControls();
+
+      const animate = async () => {
+        if (isAnimating) return;
+
+        setIsAnimating(true);
+        const duration = 1.5;
+        const steps = 60;
+        const interval = (duration * 1000) / steps;
+
+        for (let i = 0; i <= steps; i++) {
+          const progress = i / steps;
+          // Easing function for smooth deceleration
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const current = Math.round(value * eased);
+          setDisplayValue(current);
+          await new Promise(resolve => setTimeout(resolve, interval));
+        }
+
+        // Ensure final value is exact
+        setDisplayValue(value);
+
+        // Bounce animation
+        await controls.start({
+          scale: [1, 1.05, 1],
+          transition: { duration: 0.3, times: [0, 0.5, 1] }
+        });
+
+        // fireWorks
+        await confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        setIsAnimating(false);
+      };
+
+      return (
+        <motion.div
+          className={`flex items-center justify-center gap-4 ${className}`}
+          onMouseEnter={animate}
+          whileHover={{ scale: 1.05 }}
+        >
+          {icon && <div className="text-gray-400">{icon}</div>}
+          <motion.div
+            animate={controls}
+            className="flex items-center gap-4"
+          >
+            <h2 className="text-6xl font-bold tracking-tight">
+              {displayValue.toLocaleString()}
+            </h2>
+            <span className="text-gray-500 text-xl">{label}</span>
+          </motion.div>
+        </motion.div>
+      );
+    }
+
+    // StatsCard Component
+    function StatsCard({ title, value, className = '' }) {
+      return (
+        <motion.div
+          className={`bg-gray-50 rounded-xl p-8 shadow-sm flex flex-col items-center justify-center ${className}`}
+          whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+        >
+          <h5 className="text-gray-500 text-sm font-medium mb-2">{title}</h5>
+          <p className="text-gray-900 text-4xl font-bold tracking-tight">{value}</p>
+        </motion.div>
+      );
+    }
+
+    // // MediaCard Component
+    // function MediaCard({ title, value, comment, className = '' }) {
+    //   return (
+    //     <motion.div
+    //       className={`bg-gray-50 rounded-xl p-8 shadow-sm ${className}`}
+    //       whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+    //     >
+    //       <h3 className="text-gray-500 text-sm font-medium mb-2">{title}</h3>
+    //       <p className="text-gray-900 text-2xl font-bold mb-2 tracking-tight">{value}</p>
+    //       <p className="text-gray-500 text-sm">{comment}</p>
+    //     </motion.div>
+    //   );
+    // }
+
+    // // Data
+    // const characterData = [
+    //   { name: 'Jan', value: 59520 },
+    //   { name: 'Feb', value: 62693 },
+    //   { name: 'Mar', value: 72820 },
+    //   { name: 'Apr', value: 72214 },
+    //   { name: 'May', value: 72123 },
+    //   { name: 'Jun', value: 73844 },
+    //   { name: 'Jul', value: 66859 },
+    //   { name: 'Aug', value: 72507 },
+    //   { name: 'Sep', value: 68870 },
+    //   { name: 'Oct', value: 65084 },
+    //   { name: 'Nov', value: 63148 },
+    //   { name: 'Dec', value: 55264 }
+    // ];
+
+    // const hoursData = [
+    //   { name: 'Jan', value: 40.5 },
+    //   { name: 'Feb', value: 39.75 },
+    //   { name: 'Mar', value: 43 },
+    //   { name: 'Apr', value: 43.75 },
+    //   { name: 'May', value: 45.75 },
+    //   { name: 'Jun', value: 47 },
+    //   { name: 'Jul', value: 37.5 },
+    //   { name: 'Aug', value: 38 },
+    //   { name: 'Sep', value: 44 },
+    //   { name: 'Oct', value: 41.75 },
+    //   { name: 'Nov', value: 37.25 },
+    //   { name: 'Dec', value: 40 }
+    // ];
+
+    // Data
+    const characterData = [
+      { name: '1月', value: 59520 },
+      { name: '2月', value: 62693 },
+      { name: '3月', value: 72820 },
+      { name: '4月', value: 72214 },
+      { name: '5月', value: 72123 },
+      { name: '6月', value: 73844 },
+      { name: '7月', value: 66859 },
+      { name: '8月', value: 72507 },
+      { name: '9月', value: 68870 },
+      { name: '10月', value: 65084 },
+      { name: '11月', value: 63148 },
+      { name: '12月', value: 55264 }
+    ];
+
+    const hoursData = [
+      { name: '1月', value: 40.5 },
+      { name: '2月', value: 39.75 },
+      { name: '3月', value: 43 },
+      { name: '4月', value: 43.75 },
+      { name: '5月', value: 45.75 },
+      { name: '6月', value: 47 },
+      { name: '7月', value: 37.5 },
+      { name: '8月', value: 38 },
+      { name: '9月', value: 44 },
+      { name: '10月', value: 41.75 },
+      { name: '11月', value: 37.25 },
+      { name: '12月', value: 40 }
+    ];
+
+    // // App Component
+    // function App() {
+    //   const [isVisible, setIsVisible] = useState(false);
+
+    //   useEffect(() => {
+    //     setIsVisible(true);
+    //   }, []);
+
+    //   return (
+    //     <div className="min-h-screen bg-white text-gray-900 p-8">
+    //       <div className="max-w-5xl mx-auto space-y-12">
+    //         <motion.div
+    //           initial={{ opacity: 0, y: 20 }}
+    //           animate={{ opacity: 1, y: 0 }}
+    //           className="text-center"
+    //         >
+    //           <h1 className="text-5xl font-bold mb-3 tracking-tight">2024 Journal Review</h1>
+    //           <p className="text-gray-500 text-lg">A year of thoughts, reflections, and growth</p>
+    //         </motion.div>
+
+    //         <motion.div
+    //           initial={{ opacity: 0, y: 20 }}
+    //           animate={{ opacity: 1, y: 0 }}
+    //           transition={{ delay: 0.2 }}
+    //           className="bg-gray-50 rounded-2xl p-8 shadow-sm"
+    //         >
+    //           <CountUp
+    //             value={803946}
+    //             label="文字"
+    //             icon={<TypeIcon />}
+    //             className="mb-6"
+    //           />
+    //           <MonthlyChart data={characterData} dataKey="value" />
+    //         </motion.div>
+
+    //         <motion.div
+    //           initial={{ opacity: 0, y: 20 }}
+    //           animate={{ opacity: 1, y: 0 }}
+    //           transition={{ delay: 0.4 }}
+    //           className="bg-gray-50 rounded-2xl p-8 shadow-sm"
+    //         >
+    //           <CountUp
+    //             value={458.25}
+    //             label="時間"
+    //             icon={<ClockIcon />}
+    //             className="mb-6"
+    //           />
+    //           <MonthlyChart data={hoursData} dataKey="value" />
+    //         </motion.div>
+
+    //         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+    //             <StatsCard title="Total Visits" value="12,204 PV" />
+    //           </motion.div>
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+    //             <StatsCard title="Entries" value="374 記事" />
+    //           </motion.div>
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+    //             <StatsCard title="Books Read" value="40 冊" />
+    //           </motion.div>
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
+    //             <StatsCard title="Movies Watched" value="22 本" />
+    //           </motion.div>
+    //         </div>
+
+    //         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }}>
+    //             <MediaCard
+    //               title="今年のベスト1冊"
+    //               value="隣り合わせの灰と青春"
+    //               comment="生と死の狭間を生きる冒険者の身になったように、手に汗握ってあっという間の300ページだった。続編もスピンオフも好き。"
+    //             />
+    //           </motion.div>
+    //           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 }}>
+    //             <MediaCard
+    //               title="今年のベスト映画"
+    //               value="ターミナル"
+    //               comment="政変によって空港から出られなくなったため、そのまま空港で10か月暮らす男の物語。私も一週間ぐらい空港に泊ってみたい。"
+    //             />
+    //           </motion.div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   );
+    // }
+
+    function Accordion({ title, items }) {
+      const [isOpen, setIsOpen] = useState(false);
+
+      return (
+        <div className="mt-4">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center justify-between w-full text-left text-gray-500 hover:text-gray-700 text-sm"
+          >
+            <span>{title}</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <motion.div
+            initial={false}
+            animate={{ height: isOpen ? 'auto' : 0, opacity: isOpen ? 1 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <ul className="mt-2 space-y-1 text-sm text-gray-500">
+              {items.map((item, index) => (
+                <li key={index} className="flex items-center">
+                  <span className="w-4 h-4 mr-2 text-xs text-gray-400">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
+      );
+    }
+
+    // MediaCard Component with Accordion
+    function MediaCard({ title, value, comment, lists = [], className = '' }) {
+      return (
+        <motion.div
+          className={`bg-gray-50 rounded-xl p-8 shadow-sm ${className}`}
+          whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+        >
+          <h3 className="text-gray-500 text-sm font-medium mb-2">{title}</h3>
+          <p className="text-gray-900 text-2xl font-bold mb-2 tracking-tight">{value}</p>
+          <p className="text-gray-500 text-sm">{comment}</p>
+          {lists.map((list, index) => (
+            <Accordion key={index} title={list.title} items={list.items} />
+          ))}
+        </motion.div>
+      );
+    }
+
+    // Sample Data
+    const booksRead = [
+      "Project Hail Mary by Andy Weir",
+      "Dune by Frank Herbert",
+      "The Midnight Library by Matt Haig",
+      "Tomorrow, and Tomorrow, and Tomorrow by Gabrielle Zevin",
+      "Lessons in Chemistry by Bonnie Garmus"
+    ];
+
+    const moviesWatched = [
+      "Oppenheimer",
+      "Poor Things",
+      "The Zone of Interest",
+      "Past Lives",
+      "Killers of the Flower Moon"
+    ];
+
+    const comicsRead = [
+      "Watchmen: International Edition",
+      "Saga Volume 10",
+      "Monstress Book Two",
+      "Something is Killing the Children Vol. 5"
+    ];
+
+    const gamesPlayed = [
+      "Baldur's Gate 3",
+      "Alan Wake 2",
+      "The Legend of Zelda: Tears of the Kingdom",
+      "Marvel's Spider-Man 2"
+    ];
+
+    // App Component
+    function App() {
+      const [isVisible, setIsVisible] = useState(false);
+
+      useEffect(() => {
+        setIsVisible(true);
+      }, []);
+
+      return (
+        <div className="min-h-screen bg-white text-gray-900 p-8">
+          <div className="max-w-5xl mx-auto space-y-12">
+            {/* ... (previous header and charts remain the same) ... */}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                <StatsCard title="Total Visits This Year" value="365 PV" />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+                <StatsCard title="Entries Yesterday" value="3 entries" />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+                <MediaCard
+                  title="Books Read This Year"
+                  value="24 books"
+                  comment="A year of diverse reading"
+                  lists={[{ title: "View all books", items: booksRead }]}
+                />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
+                <MediaCard
+                  title="Movies Watched This Year"
+                  value="48 movies"
+                  comment="Exploring cinema's finest"
+                  lists={[{ title: "View all movies", items: moviesWatched }]}
+                />
+              </motion.div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }}>
+                <MediaCard
+                  title="Best Book of the Year"
+                  value="Project Hail Mary"
+                  comment="An incredible journey through space and friendship"
+                  lists={[{ title: "Top 5 Books", items: booksRead.slice(0, 5) }]}
+                />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}>
+                <MediaCard
+                  title="Best Comic of the Year"
+                  value="Watchmen: International Edition"
+                  comment="A timeless masterpiece revisited"
+                  lists={[{ title: "Top Comics", items: comicsRead }]}
+                />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }}>
+                <MediaCard
+                  title="Best Game of the Year"
+                  value="Baldur's Gate 3"
+                  comment="An epic RPG that sets new standards"
+                  lists={[{ title: "Top Games", items: gamesPlayed }]}
+                />
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</body>
+
+</html>
