@@ -40,3 +40,6 @@ classes/
 
 # Visual Studio Code
 .vscode
+
+# js
+/node_modules/*
